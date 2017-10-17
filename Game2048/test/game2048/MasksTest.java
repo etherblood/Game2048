@@ -25,6 +25,21 @@ public class MasksTest {
         long actual = Masks.col0ToFlippedRow3(state);
         assertEquals(expected, actual);
     }
+    
+    @Test
+    public void col0ToRow0() {
+        long state = 0x123456789abcdefL;
+        long expected = 0x37bfL;
+        long actual = Masks.col0ToRow0(state);
+        assertEquals(expected, actual);
+    }
+    @Test
+    public void col0ToFlippedRow0() {
+        long state = 0x123456789abcdefL;
+        long expected = 0xfb73L;
+        long actual = Masks.col0ToFlippedRow0(state);
+        assertEquals(expected, actual);
+    }
 
     @Test
     public void row0ToFlippedCol3() {

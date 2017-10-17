@@ -19,20 +19,21 @@ public class Masks {
         return ((value & (COLUMN_0 * MASK)) * DIAGONAL_1) & ((ROW_0 * MASK) << (3 * SHIFT_ROW));
     }
 
+    public static long col0ToRow0(long value) {
+        return ((value & (COLUMN_0 * MASK)) * DIAGONAL_1) >>> (3 * SHIFT_ROW);
+    }
+
     public static long col0ToFlippedRow3(long value) {
         return ((value & (COLUMN_0 * MASK)) * DIAGONAL_0) & ((ROW_0 * MASK) << (3 * SHIFT_ROW));
     }
 
+    public static long col0ToFlippedRow0(long value) {
+        return ((value & (COLUMN_0 * MASK)) * DIAGONAL_0) >>> (3 * SHIFT_ROW);
+    }
+
     public static long row0ToCol3(long value) {
         long diagonal = ((value & (ROW_0 * MASK)) * COLUMN_0) & (DIAGONAL_0 * MASK);
-        long result0 = (diagonal * ROW_0) & ((COLUMN_0 * MASK) << (3 * SHIFT_COLUMN));
-        long a = value & 0xf;
-        long d = (value >>> (3 * SHIFT_COLUMN)) & 0xf;
-        if(a + d < 16) {
-            long result1 = ((value & (ROW_0 * MASK)) * DIAGONAL_1) & ((COLUMN_0 * MASK) << (3 * SHIFT_COLUMN));
-            assert result0 == result1;
-        }
-        return result0;
+        return (diagonal * ROW_0) & ((COLUMN_0 * MASK) << (3 * SHIFT_COLUMN));
     }
 
     public static long row0ToFlippedCol3(long value) {
