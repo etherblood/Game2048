@@ -8,6 +8,7 @@ import game2048.mcts.HasWeight;
 import game2048.mcts.Move;
 import game2048.mymcts.AvailableMoves;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Random;
 
 
@@ -61,7 +62,7 @@ public class ExpectimaxController2048 implements ExpectimaxController<Move> {
     }
 
     @Override
-    public Iterable<Move> availableMoves() {
+    public List<Move> availableMoves() {
         return controller.availableMoves(state).toList();
     }
 

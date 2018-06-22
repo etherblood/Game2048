@@ -1,6 +1,5 @@
 package game2048.expectimax.eval;
 
-import game2048.MyMctsController;
 import game2048.SimpleLongState;
 import game2048.expectimax.eval.treestrap.ParameterVector;
 import java.io.DataInputStream;

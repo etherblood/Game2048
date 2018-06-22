@@ -1,7 +1,7 @@
 package game2048;
 
+import game2048.expectimax.CountingExpectimaxBot;
 import game2048.expectimax.ExpectimaxBot;
-import game2048.expectimax.ExpectimaxController;
 import game2048.expectimax.ExpectimaxController2048;
 import game2048.expectimax.TranspositionTable;
 import game2048.expectimax.Zobrist;
@@ -22,7 +22,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -32,9 +31,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Scanner;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  *
@@ -49,8 +45,8 @@ public class Game2048 {
 //        playerPlay();
 //        randomPlay();
 //        myMctsPlay();
-//        expectimaxPlay();
-        trainEval2();
+        expectimaxPlay(new AdvancedEval(new MyMctsController()), 1000000);
+//        trainEval2();
     }
 
     private static void trainEval2() throws IOException {
@@ -264,14 +260,15 @@ public class Game2048 {
 //        }
 //        System.out.println("trained");
 //    }
-    private static void expectimaxPlay(Evaluation eval, int depth) {
+    private static void expectimaxPlay(Evaluation eval, int strength) {
         long seed = System.nanoTime();
+        System.out.println("seed: " + seed);
         try {
             MyMctsController controller = new MyMctsController();
             Random rng = new Random(seed);
             ExpectimaxController2048 expectimaxController2048 = new ExpectimaxController2048(new SimpleLongState(), controller, rng, eval);
             TranspositionTable table = new TranspositionTable(25);
-            ExpectimaxBot<Move> bot = new ExpectimaxBot<>(expectimaxController2048, table, new Zobrist(rng));
+            CountingExpectimaxBot<Move> bot = new CountingExpectimaxBot<>(expectimaxController2048, table, new Zobrist(rng));
             SimpleLongState state = new SimpleLongState();
             state.setBoard(1);
             state.setPlayerTurn(true);
@@ -280,14 +277,14 @@ public class Game2048 {
                 Move move;
                 if (state.isPlayerTurn()) {
                     expectimaxController2048.reset(state);
-                    move = bot.search(depth);
+                    move = bot.search(strength);
                 } else {
                     move = controller.availableMoves(state).selectRandomMove(rng);
                 }
                 controller.applyMove(state, move);
 
-//                controller.printState(state, System.out);
-//                System.out.println();
+                controller.printState(state, System.out);
+                System.out.println();
             }
                 controller.printState(state, System.out);
             System.out.println("score is: " + (int) controller.score(state));

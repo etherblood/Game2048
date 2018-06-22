@@ -1,5 +1,7 @@
 package game2048.expectimax;
 
+import java.util.List;
+
 /**
  *
  * @author Philipp
@@ -10,7 +12,7 @@ public interface ExpectimaxController<M> {
     void unmake(M move);
     
     boolean isNextMoveRandom();
-    Iterable<M> availableMoves();
+    List<M> availableMoves();
     Iterable<M> sampleMoves(int num);
     int moveWeight(M move);
     

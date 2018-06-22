@@ -1,10 +1,12 @@
 package game2048.expectimax;
 
+import java.util.List;
+
 /**
  *
  * @author Philipp
  */
-public class ExpectimaxBot<M> {
+public class CountingExpectimaxBot<M> {
     
     private final static boolean VERBOSE = true;
     private final static boolean SAMPLING = false;
@@ -17,7 +19,7 @@ public class ExpectimaxBot<M> {
     private final Zobrist zobrist;
     public float lastScore;
 
-    public ExpectimaxBot(ExpectimaxController<M> controller, TranspositionTable table, Zobrist zobrist) {
+    public CountingExpectimaxBot(ExpectimaxController<M> controller, TranspositionTable table, Zobrist zobrist) {
         this.controller = controller;
         this.table = table;
         this.zobrist = zobrist;
@@ -26,21 +28,24 @@ public class ExpectimaxBot<M> {
     }
     
     long nodes;
-    public M search(int depth) {
-        if(depth <= 0) {
-            throw new IllegalArgumentException("depth must be greater than 0.");
+    public M search(int n) {
+        if(n <= 0) {
+            throw new IllegalArgumentException("nodes must be greater than 0.");
         }
         if(controller.isNextMoveRandom()) {
             throw new IllegalStateException("cannot search random moves.");
         }
-        nodes = 0;
-        maxHit = maxMiss = 0;
+        nodes = 1;
+//        maxHit = maxMiss = 0;
+//        minHit = minMiss = 0;
         long nanos = System.nanoTime();
         float bestScore = Float.NEGATIVE_INFINITY;
         M bestMove = null;
-        for (M move : controller.availableMoves()) {
+        List<M> availableMoves = controller.availableMoves();
+        int nextN = (n - 1) / availableMoves.size();
+        for (M move : availableMoves) {
             controller.make(move);
-            float moveScore = expecti(depth - 1);
+            float moveScore = expecti(nextN);
             controller.unmake(move);
             if(moveScore > bestScore) {
                 bestMove = move;
@@ -54,9 +59,9 @@ public class ExpectimaxBot<M> {
             }
             long millis = nanos / 1000000;
             long knps = 1000000 * nodes / nanos;
-            System.out.println("score: " + bestScore + " depth: " + depth);
+//            System.out.println("score: " + bestScore + " depth: " + depth);
             System.out.println(nodes + " nodes / " + millis + " ms (" + knps + " kn/s)");
-            System.out.println("branching: " + String.format("%s", Math.pow(nodes, 1d / depth)));
+//            System.out.println("branching: " + String.format("%s", Math.pow(nodes, 1d / depth)));
             System.out.println("max hits: " + maxHit + " misses: " + maxMiss);
             System.out.println("expecti hits: " + minHit + " misses: " + minMiss);
         }
@@ -65,10 +70,10 @@ public class ExpectimaxBot<M> {
     }
     
     long maxHit, maxMiss;
-    private float max(int depth) {
+    private float max(int n) {
         assert !controller.isNextMoveRandom();
         nodes++;
-        if(depth <= 0) {
+        if(n <= 1) {
             return controller.eval();
         }
       
@@ -77,7 +82,7 @@ public class ExpectimaxBot<M> {
             id = controller.id();
             hash = zobrist.hash(id);
             table.load(hash, entry);
-            if (entry.getId() == id && entry.getDepth() >= depth) {
+            if (entry.getId() == id && entry.getDepth() >= n) {
                 maxHit++;
                 return entry.getScore();
             }
@@ -85,16 +90,17 @@ public class ExpectimaxBot<M> {
         }
         
         float score = Float.NEGATIVE_INFINITY;
-        
-        for (M move : controller.availableMoves()) {
+        List<M> availableMoves = controller.availableMoves();
+        int nextN = (n - 1) / availableMoves.size();
+        for (M move : availableMoves) {
             controller.make(move);
-            float moveScore = expecti(depth - 1);
+            float moveScore = expecti(nextN);
             controller.unmake(move);
             
             score = Math.max(moveScore, score);
         }
         if(maxTtEnabled) {
-            entry.setDepthAndScore(depth, (int)score);
+            entry.setDepthAndScore(n, (int)score);
             entry.setId(id);
             table.save(hash, entry);
         }
@@ -102,10 +108,10 @@ public class ExpectimaxBot<M> {
     }
     
     long minHit, minMiss;
-    private float expecti(int depth) {
+    private float expecti(int n) {
         assert controller.isNextMoveRandom();
         nodes++;
-        if(depth <= 0|| controller.isGameOver()) {
+        if(n <= 1|| controller.isGameOver()) {
             return controller.eval();
         }
         
@@ -114,7 +120,7 @@ public class ExpectimaxBot<M> {
             id = controller.id();
             hash = zobrist.hash(id);
             table.load(hash, entry);
-            if (entry.getId() == id && entry.getDepth() >= depth) {
+            if (entry.getId() == id && entry.getDepth() >= n) {
                 minHit++;
                 return entry.getScore();
             }
@@ -124,20 +130,23 @@ public class ExpectimaxBot<M> {
         int weightSum = 0;
         int scoreSum = 0;
         int score;
-        
-        for (M move : SAMPLING? controller.sampleMoves(1 * depth): controller.availableMoves()) {
+        List<M> availableMoves = controller.availableMoves();
+        for (M availableMove : availableMoves) {
+            weightSum += controller.moveWeight(availableMove);
+        }
+        int nextN = (n - 1);
+        for (M move : /*SAMPLING? controller.sampleMoves(1 * depth):*/ availableMoves) {
             int weight = controller.moveWeight(move);
             
             controller.make(move);
-            float moveScore = max(depth - (weight == 1? 2: 1));
+            float moveScore = max(nextN  * weight / weightSum);
             controller.unmake(move);
             
-            weightSum += weight;
             scoreSum += weight * moveScore;
         }
         score = scoreSum / weightSum;
         if(expectiTtEnabled) {
-            entry.setDepthAndScore(depth, score);
+            entry.setDepthAndScore(n, score);
             entry.setId(id);
             table.save(hash, entry);
         }
